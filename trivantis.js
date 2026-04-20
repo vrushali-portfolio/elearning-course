@@ -1856,8 +1856,9 @@ function addRotateCSS(angle, hasShadow, width, height, xPos, yPos, shadowDirecti
 
 	if (is.chrome || is.safari)
 	{
-		if (xOffset < 0) deltaCenterX = deltaCenterX - (xOffset - shadowBlurRadius);
-		if (yOffset < 0) deltaCenterY = deltaCenterY - (yOffset - shadowBlurRadius);
+		// LD-8854: To fix objs origin with center shadow and flip/rotation
+		if (xOffset <= 0) deltaCenterX = deltaCenterX - (xOffset - shadowBlurRadius);
+		if (yOffset <= 0) deltaCenterY = deltaCenterY - (yOffset - shadowBlurRadius);
 		rotateAttribute += '-webkit-transform-origin: ' + deltaCenterX + 'px ' + deltaCenterY + 'px;';
 
 		rotateAttribute += '-webkit-transform:';
@@ -1879,8 +1880,9 @@ function addRotateCSS(angle, hasShadow, width, height, xPos, yPos, shadowDirecti
 	}
 	else if (is.firefox)
 	{
-		if (xOffset < 0) deltaCenterX = deltaCenterX - (xOffset - shadowBlurRadius);
-		if (yOffset < 0) deltaCenterY = deltaCenterY - (yOffset - shadowBlurRadius);
+		// LD-8854: To fix objs origin with center shadow and flip/rotation
+		if (xOffset <= 0) deltaCenterX = deltaCenterX - (xOffset - shadowBlurRadius);
+		if (yOffset <= 0) deltaCenterY = deltaCenterY - (yOffset - shadowBlurRadius);
 		rotateAttribute += '-moz-transform-origin: ' + deltaCenterX + 'px ' + deltaCenterY + 'px;';
 
 		rotateAttribute += '-moz-transform:';
@@ -1906,8 +1908,9 @@ function addRotateCSS(angle, hasShadow, width, height, xPos, yPos, shadowDirecti
 	}
 	else 
 	{
-		if (xOffset < 0) deltaCenterX = deltaCenterX - (xOffset - shadowBlurRadius);
-		if (yOffset < 0) deltaCenterY = deltaCenterY - (yOffset - shadowBlurRadius);
+		// LD-8854: To fix objs origin with center shadow and flip/rotation
+		if (xOffset <= 0) deltaCenterX = deltaCenterX - (xOffset - shadowBlurRadius);
+		if (yOffset <= 0) deltaCenterY = deltaCenterY - (yOffset - shadowBlurRadius);
 		rotateAttribute += 'transform-origin: ' + deltaCenterX + 'px ' + deltaCenterY + 'px;';
 
 		rotateAttribute += 'transform:';
@@ -3636,7 +3639,7 @@ function AdjustAttributesForEffects(thisObj, objAttribs)
 		var xOuterOffset = thisObj.outerShadowDepth * Math.cos(outerRadians);
 		//Multiply by -1 because a negative offset means this shadow is in the positive y-direction on the screen
 		var yOuterOffset = -1 * thisObj.outerShadowDepth * Math.sin(outerRadians);
-
+		
 		attribs.xOffset = parseFloat(xOuterOffset.toFixed(5));
 		attribs.yOffset = parseFloat(yOuterOffset.toFixed(5));
 		attribs.xOffset += (((attribs.xOffset < 0) ? -2 : 2) * thisObj.outerShadowBlurRadius);
@@ -3750,6 +3753,16 @@ function CorrectSizePosForEffects(thisObj, objToCorrect)
 					objToCorrect.width = adjustedWidth;
 					objToCorrect.height = adjustedHeight;
 				}
+				else if (objToCorrect.xOuterOffset == 0 && objToCorrect.yOuterOffset == 0)
+				{
+					// LD-8854: To correct the center shadow positioning when switching to responsive view
+					adjustedXPos -= thisObj.outerShadowBlurRadius;
+					adjustedYPos -= thisObj.outerShadowBlurRadius;
+					objToCorrect.y = adjustedYPos;
+					objToCorrect.x = adjustedXPos;
+					objToCorrect.width = adjustedWidth + thisObj.outerShadowBlurRadius;
+					objToCorrect.height = adjustedHeight + thisObj.outerShadowBlurRadius;
+				}
 				else
 				{
 					objToCorrect.width = adjustedWidth + thisObj.outerShadowBlurRadius;
@@ -3777,9 +3790,10 @@ function CorrectSizePosForEffects(thisObj, objToCorrect)
 		deltaCenterX = thisObj.w / 2.0;
 		deltaCenterY = thisObj.h / 2.0;
 
-		if (xOffset < 0)
+		// LD-8854: To fix objs origin with center shadow and flip/rotation
+		if (xOffset <= 0)
 			deltaCenterX = deltaCenterX - (xOffset - thisObj.outerShadowBlurRadius);
-		if (yOffset < 0)
+		if (yOffset <= 0)
 			deltaCenterY = deltaCenterY - (yOffset - thisObj.outerShadowBlurRadius);
 
 		objToCorrect.deltaX = deltaCenterX;
@@ -3788,8 +3802,9 @@ function CorrectSizePosForEffects(thisObj, objToCorrect)
 
 	if (typeof (ObjButton) != "undefined" && thisObj.constructor == ObjButton)
 	{
-		if (!thisObj.name.indexOf("button") > -1)
-			objToCorrect.width += 3
+		// LD-8854: no need to manual increase, alredy from the trivantis-button.js file
+		//if (!thisObj.name.indexOf("button") > -1)
+			//objToCorrect.width += 3
 	}
 
 	if (typeof (ObjInline) != "undefined")
@@ -3839,6 +3854,24 @@ function ModifySVGShadow(thisObj, objAttribs)
 		width = 200 + 200 * (thisObj.originalOuterShadowDepth / 100);
 		height = 200 + 200 * (thisObj.originalOuterShadowDepth / 100);
 	}
+
+	if (objAttribs.xOuterOffset == 0 && objAttribs.yOuterOffset == 0)
+	{
+		// LD-8854: calculate svg filter values for center shadows when switching to responsive view
+		// Note: later validate that above if (objAttribs.xOffset <= 0 || objAttribs.yOffset <= 0 || thisObj.lineWeight)
+		// such that values are not expected ones or xOuterOffset/yOuterOffset should be used
+		xDisplacementPercentage = ((-thisObj.outerShadowBlurRadius / thisObj.w) * 100).toFixed(5);
+		yDisplacementPercentage = ((-thisObj.outerShadowBlurRadius / thisObj.h) * 100).toFixed(5);
+
+		width = 100 * (Math.abs(objAttribs.xOffset) + thisObj.w + 2 * thisObj.outerShadowBlurRadius) / thisObj.w;
+		height = 100 * (Math.abs(objAttribs.yOffset) + thisObj.h + 2 * thisObj.outerShadowBlurRadius) / thisObj.h;
+
+		if (width < 200)
+			width = 200;
+		if (height < 200)
+			height = 200;
+	}
+	
 	if (svgTag && is.svg)
 	{
 		svgTag.height.baseVal.valueInSpecifiedUnits = height;

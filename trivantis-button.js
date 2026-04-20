@@ -1698,8 +1698,8 @@ function ObjLoadProps()
 			this.h = (typeof(obj.h)!="undefined"?obj.h:this.h);
 			this.r = typeof (obj.rotateAngle) != "undefined" ? obj.rotateAngle : '';	// LD-8762 this.r is override only for lower views
 			this.bBottom = (typeof(obj.bOffBottom)!="undefined"?obj.bOffBottom:this.bBottom);
-			this.vf = obj.flipV ? 1 : 0;	// LD-8762
-			this.hf = obj.flipH ? 1 : 0;	// LD-8762
+			this.vf = (typeof(obj.flipV) != "undefined") ? obj.flipV : this.vf; // LD-8762
+			this.hf = (typeof(obj.flipH) != "undefined") ? obj.flipH : this.hf; // LD-8762
 			
 			this.B64 = typeof(obj.B64)!="undefined"?obj.B64:this.B64;
 			this.rebuildDefs();

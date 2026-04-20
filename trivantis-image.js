@@ -1615,8 +1615,14 @@ function ObjLoadProps()
 			this.r = typeof (obj.rotateAngle) != "undefined" ? obj.rotateAngle : '';	// LD-8762 this.r is override only for lower views
 			this.bBottom = (typeof(obj.bOffBottom)!="undefined"?obj.bOffBottom:this.bBottom);
 			this.stylemods = typeof(obj.stylemods)!="undefined"?obj.stylemods:null;
-			this.vf = obj.flipV ? 1 : 0;	// LD-8762
-			this.hf = obj.flipH ? 1 : 0;	// LD-8762
+			
+			if(this.isImage())
+			{
+				//  LD-8847: for images
+				this.vf = (typeof(obj.flipV) != "undefined") ? obj.flipV : this.vf; // LD-8762
+				this.hf = (typeof(obj.flipH) != "undefined") ? obj.flipH : this.hf; // LD-8762
+			}
+
 			if(this.stylemods && this.stylemods.length == 2)
 			{
 				this.textDivCSS = this.stylemods[0].sel + this.stylemods[0].decl;
